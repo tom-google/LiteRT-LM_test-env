@@ -1,3 +1,7 @@
+__NOTE:__ This repo was "forked" from https://github.com/google-ai-edge/LiteRT-LM
+
+---
+
 # LiteRT-LM
 
 A C++ library to efficiently run language models across edge platforms.

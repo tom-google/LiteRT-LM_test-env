@@ -1,0 +1,206 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 916ddec..55ddce2 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -149,6 +149,8 @@ generate_src_files(LITERTLM_CORE_FILES ${ALL_SOURCE_FILES} ${ALL_HEADER_FILES})
+ generate_src_files(LITERTLM_FLATBUFFER_FILES ${ALL_SCHEMA_FILES})
+ # generate_flatbuffers(litertlm_generated_flatbuffers)
+ 
++
++
+ if(LITERTLM_CORE_FILES)
+     include("${LITERTLM_MODULES_DIR}/patcher.cmake")
+     set_property(
+@@ -157,6 +159,12 @@ if(LITERTLM_CORE_FILES)
+         "${LITERTLM_PATCHES_DIR}/litertlm_patches.json"
+     )
+     apply_patches_from_json("${LITERTLM_PATCHES_DIR}/litertlm_patches.json")
++
++    if(NOT EXISTS "${GENERATED_SRC_DIR}/runtime/components/constrained_decoding/gemma_model_constraint_provider.cc")
++    file(COPY "${LITERTLM_PATCHES_DIR}/stubs/gemma_model_constraint_provider.cc"
++    DESTINATION "${GENERATED_SRC_DIR}/runtime/components/constrained_decoding"
++  )
++endif()
+ endif()
+ 
+ 
+diff --git a/cmake/patches/litertlm_patches.json b/cmake/patches/litertlm_patches.json
+index 6c0b3ef..09e655a 100644
+--- a/cmake/patches/litertlm_patches.json
++++ b/cmake/patches/litertlm_patches.json
+@@ -4,29 +4,29 @@
+       "comment": "Fix SentencePiece return type",
+       "src_file": "runtime/components/sentencepiece_tokenizer.cc",
+       "find_string": "return status;",
+-      "patch_file": "sentencepiece_return_fix.shim"
++      "patch_file": "sentencepiece_return_fix.cc"
+     },
+     {
+       "comment": "Fix Read schema error",
+       "src_file": "schema/core/litertlm_read.cc",
+       "find_string": "return sp_proc->LoadFromSerializedProto(buffer_view);",
+-      "patch_file": "litertlm_read_status_fix.shim"
++      "patch_file": "litertlm_read_status_fix.cc"
+     },
+     {
+       "src_file": "runtime/executor/llm_litert_compiled_model_executor.cc",
+       "find_string": "output_buffer_dup.ClearEvent()",
+-      "patch_file": "noop.shim"
++      "patch_file": "noop.cc"
+     },
+     {
+       "src_file": "runtime/executor/llm_litert_compiled_model_executor.cc",
+       "find_string": "LITERT_RETURN_IF_ERROR(input_buffer.Clear());",
+-      "patch_file": "noop.shim"
++      "patch_file": "noop.cc"
+     },
+     {
+       "comment": "Fix RuntimeOptions missing method (Line 1617 & 2016)",
+       "src_file": "runtime/executor/llm_litert_compiled_model_executor.cc",
+       "find_string": "runtime_options.SetCompressQuantizationZeroPoints(true);",
+-      "patch_file": "noop.shim"
++      "patch_file": "noop.cc"
+     }
+   ]
+-}
+\ No newline at end of file
++}
+diff --git a/cmake/patches/stubs/gemma_model_constraint_provider.cc b/cmake/patches/stubs/gemma_model_constraint_provider.cc
+new file mode 100644
+index 0000000..1b44dd4
+--- /dev/null
++++ b/cmake/patches/stubs/gemma_model_constraint_provider.cc
+@@ -0,0 +1,40 @@
++// Copyright 2026 Google LLC.
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//      http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++
++
++#include <cstdio>
++
++struct LiteRtLmGemmaModelConstraintProvider {
++    int dummy;
++};
++
++extern "C" {
++
++void* LiteRtLmGemmaModelConstraintProvider_Create(void* config) {
++    fprintf(stderr, "\n[LiteRT-LM WARN] Gemma Constraint Provider is"
++                    " STUBBED/DISABLED.\n");
++    fprintf(stderr, "[LiteRT-LM WARN] Any requests for grammar-constrained"
++                    " decoding will be ignored or fail.\n\n");
++    return nullptr;
++}
++
++void LiteRtLmGemmaModelConstraintProvider_Destroy(void* provider) {
++    // No-op.
++}
++
++void* LiteRtLmGemmaModelConstraintProvider_CreateConstraintFromTools(
++    void* provider, void* tools) {
++    return nullptr;
++}
++}  // extern "C"
+diff --git a/runtime/components/constrained_decoding/CMakeLists.txt b/runtime/components/constrained_decoding/CMakeLists.txt
+index 92e3342..969b5b1 100644
+--- a/runtime/components/constrained_decoding/CMakeLists.txt
++++ b/runtime/components/constrained_decoding/CMakeLists.txt
+@@ -16,8 +16,7 @@
+ set(PKG_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
+ 
+ add_litertlm_library(runtime_components_constrained_decoding_bitmap INTERFACE)
+-add_library(LiteRTLM::Runtime::Components::ConstrainedDecoding::Bitmap
+-  ALIAS runtime_components_constrained_decoding_bitmap)
++add_library(LiteRTLM::Runtime::Components::ConstrainedDecoding::Bitmap ALIAS runtime_components_constrained_decoding_bitmap)
+ 
+ target_include_directories(runtime_components_constrained_decoding_bitmap
+   INTERFACE
+@@ -26,8 +25,7 @@ target_include_directories(runtime_components_constrained_decoding_bitmap
+ )
+ 
+ add_litertlm_library(runtime_components_constrained_decoding_constraint INTERFACE)
+-add_library(LiteRTLM::Runtime::Components::ConstrainedDecoding::Constraint
+-  ALIAS runtime_components_constrained_decoding_constraint)
++add_library(LiteRTLM::Runtime::Components::ConstrainedDecoding::Constraint ALIAS runtime_components_constrained_decoding_constraint)
+ 
+ target_include_directories(runtime_components_constrained_decoding_constraint
+   INTERFACE
+@@ -42,8 +40,7 @@ target_link_libraries(runtime_components_constrained_decoding_constraint
+ )
+ 
+ add_litertlm_library(runtime_components_constrained_decoding_constraint_provider INTERFACE)
+-add_library(LiteRTLM::Runtime::Components::ConstrainedDecoding::ConstraintProvider
+-  ALIAS runtime_components_constrained_decoding_constraint_provider)
++add_library(LiteRTLM::Runtime::Components::ConstrainedDecoding::ConstraintProvider ALIAS runtime_components_constrained_decoding_constraint_provider)
+ 
+ target_include_directories(runtime_components_constrained_decoding_constraint_provider
+   INTERFACE
+@@ -201,8 +198,7 @@ target_link_libraries(runtime_components_constrained_decoding_llg_constraint_pro
+ add_litertlm_library(runtime_components_constrained_decoding_llguidance_schema_utils STATIC
+   llguidance_schema_utils.cc
+ )
+-add_library(LiteRTLM::Runtime::Components::ConstrainedDecoding::LlguidanceSchemaUtils
+-  ALIAS runtime_components_constrained_decoding_llguidance_schema_utils)
++add_library(LiteRTLM::Runtime::Components::ConstrainedDecoding::LlguidanceSchemaUtils ALIAS runtime_components_constrained_decoding_llguidance_schema_utils)
+ 
+ target_include_directories(runtime_components_constrained_decoding_llguidance_schema_utils
+   PRIVATE
+@@ -215,13 +211,12 @@ target_link_libraries(runtime_components_constrained_decoding_llguidance_schema_
+     LiteRTLM::Runtime::Components::ConstrainedDecoding::Constraint
+     LITERTLM_DEPS
+ )
+-
+-
+ add_litertlm_library(runtime_components_constrained_decoding_gemma_model_constraint_provider STATIC
+-  ${LITERTLM_PATCHER_DIR}/stubs/gemma_model_constraint_provider_stub.cc
++  gemma_model_constraint_provider.cc
+ )
+-add_library(LiteRTLM::Runtime::Components::ConstrainedDecoding::GemmaModelConstraintProvider
+-  ALIAS runtime_components_constrained_decoding_gemma_model_constraint_provider)
++add_dependencies(runtime_components_constrained_decoding_gemma_model_constraint_provider litert_external)
++
++add_library(LiteRTLM::Runtime::Components::ConstrainedDecoding::GemmaModelConstraintProvider ALIAS runtime_components_constrained_decoding_gemma_model_constraint_provider)
+ 
+ target_include_directories(runtime_components_constrained_decoding_gemma_model_constraint_provider
+   PRIVATE
+@@ -241,8 +236,7 @@ target_link_libraries(runtime_components_constrained_decoding_gemma_model_constr
+ 
+ 
+ add_library(runtime_components_constrained_decoding_libs INTERFACE)
+-add_library(LiteRTLM::Runtime::Components::ConstrainedDecoding
+-  ALIAS runtime_components_constrained_decoding_libs)
++add_library(LiteRTLM::Runtime::Components::ConstrainedDecoding ALIAS runtime_components_constrained_decoding_libs)
+ 
+ target_link_libraries(runtime_components_constrained_decoding_libs INTERFACE
+   LiteRTLM::Runtime::Components::ConstrainedDecoding::Bitmap
+@@ -258,4 +252,4 @@ target_link_libraries(runtime_components_constrained_decoding_libs INTERFACE
+   LiteRTLM::Runtime::Components::ConstrainedDecoding::FakeConstraint
+   LiteRTLM::Runtime::Components::ConstrainedDecoding::LlgConstraintProvider
+   LiteRTLM::Runtime::Components::ConstrainedDecoding::LlguidanceSchemaUtils
+-)
+\ No newline at end of file
++)
+diff --git a/runtime/components/tool_use/antlr/generated/mod.rs b/runtime/components/tool_use/antlr/generated/mod.rs
+new file mode 100644
+index 0000000..4f3daf8
+--- /dev/null
++++ b/runtime/components/tool_use/antlr/generated/mod.rs
+@@ -0,0 +1,7 @@
++pub mod antlrfclexer;
++pub mod antlrfcparserlistener;
++pub mod antlrfcparser;
++pub mod antlrpythonlexer;
++pub mod antlrpythonparserbaselistener;
++pub mod antlrpythonparserlistener;
++pub mod antlrpythonparser;
+\ No newline at end of file
