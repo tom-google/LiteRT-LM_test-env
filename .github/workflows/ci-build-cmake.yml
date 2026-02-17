@@ -20,7 +20,7 @@ env:
   MODEL_PATH: ./models/gemma3-270m-it-q8.litertlm
   MODEL_URL: https://huggingface.co/litert-community/gemma-3-270m-it/resolve/main/gemma3-270m-it-q8.litertlm
   CCACHE_DIR: "${{ github.workspace }}/.ccache"
-  CCACHE_SLOPPINESS: "time_macros,include_file_ctime" 
+  CCACHE_SLOPPINESS: "time_macros" 
 
 jobs:
   smoke-test:
