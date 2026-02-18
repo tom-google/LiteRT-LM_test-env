@@ -121,8 +121,6 @@ jobs:
             cmake/build/generated
             cmake/build/external/flatbuffers
           key: ${{ runner.os }}-generated-src-v1-${{ hashFiles('schema/**/*.fbs', 'cmake/modules/generators.cmake', 'cmake/packages/flatbuffers/**', 'c/**/*.{cc,h}', 'schema/**/*.{cc,h}', 'runtime/**/*.{cc,h}') }}
-          restore-keys: |
-            ${{ runner.os }}-generated-src-v1-
              
       - name: Configure CMake
         run: |
