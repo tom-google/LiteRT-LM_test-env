@@ -135,7 +135,7 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_CXX_COMPILER=g++ \
             -DCMAKE_C_COMPILER=gcc
-            # -DENABLE_CCACHE=ON
+            -DENABLE_CCACHE=ON
 
       - name: Build
         run: cmake --build cmake/build --config Release --parallel $(nproc)
@@ -146,6 +146,13 @@ jobs:
             --backend=cpu \
             --model_path=${{ env.MODEL_PATH }} \
             --input_prompt="How tall is the Eiffel Tower?"
+
+      - name: Save CCache on Failure
+        if: failure()
+        uses: actions/cache/save@v4
+        with:
+          path: .ccache
+          key: ${{ runner.os }}-ccache-${{ hashFiles('**/CMakeLists.txt') }}
 
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
