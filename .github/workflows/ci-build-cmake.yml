@@ -19,8 +19,8 @@ env:
   MODEL_KEY: gemma-3-270m-it-v1
   MODEL_PATH: ./models/gemma3-270m-it-q8.litertlm
   MODEL_URL: https://huggingface.co/litert-community/gemma-3-270m-it/resolve/main/gemma3-270m-it-q8.litertlm
-  CCACHE_DIR: "${{ github.workspace }}/.ccache"
-  CCACHE_SLOPPINESS: "time_macros" 
+  # CCACHE_DIR: "${{ github.workspace }}/.ccache"
+  # CCACHE_SLOPPINESS: "time_macros" 
 
 jobs:
   smoke-test:
@@ -106,13 +106,13 @@ jobs:
           restore-keys: |
              ${{ runner.os }}-litert-
 
-      - name: Cache CCache
-        uses: actions/cache@v4
-        with:
-          path: .ccache
-          key: ${{ runner.os }}-ccache-${{ hashFiles('**/CMakeLists.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-ccache-
+      # - name: Cache CCache
+      #   uses: actions/cache@v4
+      #   with:
+      #     path: .ccache
+      #     key: ${{ runner.os }}-ccache-${{ hashFiles('**/CMakeLists.txt') }}
+      #     restore-keys: |
+      #       ${{ runner.os }}-ccache-
             
       - name: Configure CMake
         run: |
@@ -120,8 +120,8 @@ jobs:
           cmake -B cmake/build -G "Unix Makefiles" -S . \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_CXX_COMPILER=g++ \
-            -DCMAKE_C_COMPILER=gcc \
-            -DENABLE_CCACHE=ON
+            -DCMAKE_C_COMPILER=gcc
+            # -DENABLE_CCACHE=ON
 
       - name: Build
         run: cmake --build cmake/build --config Release --parallel $(nproc)
@@ -133,9 +133,11 @@ jobs:
             --model_path=${{ env.MODEL_PATH }} \
             --input_prompt="How tall is the Eiffel Tower?"
 
-      - name: Save CCache on Failure
-        if: failure()
-        uses: actions/cache/save@v4
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
         with:
-          path: .ccache
-          key: ${{ runner.os }}-ccache-${{ hashFiles('**/CMakeLists.txt') }}
+          name: build-debug-artifacts
+          path: |
+            cmake/build/generated
+            cmake/build/**/CMakeCache.txt
+            retention-days: 1
