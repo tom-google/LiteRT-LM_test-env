@@ -128,7 +128,7 @@ jobs:
           cmake -B cmake/build -G "Unix Makefiles" -S . \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_CXX_COMPILER=g++ \
-            -DCMAKE_C_COMPILER=gcc
+            -DCMAKE_C_COMPILER=gcc \
             -DENABLE_CCACHE=ON
 
       - name: Build
