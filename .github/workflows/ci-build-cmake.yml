@@ -19,8 +19,8 @@ env:
   MODEL_KEY: gemma-3-270m-it-v1
   MODEL_PATH: ./models/gemma3-270m-it-q8.litertlm
   MODEL_URL: https://huggingface.co/litert-community/gemma-3-270m-it/resolve/main/gemma3-270m-it-q8.litertlm
-  # CCACHE_DIR: "${{ github.workspace }}/.ccache"
-  # CCACHE_SLOPPINESS: "time_macros" 
+  CCACHE_DIR: "${{ github.workspace }}/.ccache"
+  CCACHE_SLOPPINESS: "time_macros" 
 
 jobs:
   smoke-test:
@@ -81,12 +81,11 @@ jobs:
           path: |
             cmake/build/external/abseil-cpp
             cmake/build/external/protobuf
-            cmake/build/external/flatbuffers
             cmake/build/external/re2
             cmake/build/external/sentencepiece
             cmake/build/external/tokenizers-cpp
             cmake/build/external/opencl_headers
-          key: ${{ runner.os }}-ext-deps-${{ hashFiles('cmake/packages/absl/**', 'cmake/packages/protobuf/**', 'cmake/packages/flatbuffers/**', 'cmake/packages/re2/**', 'cmake/packages/sentencepiece/**', 'cmake/packages/tokenizers/**', 'cmake/packages/opencl/**') }}
+          key: ${{ runner.os }}-ext-deps-${{ hashFiles('cmake/packages/absl/**', 'cmake/packages/protobuf/**', 'cmake/packages/re2/**', 'cmake/packages/sentencepiece/**', 'cmake/packages/tokenizers/**', 'cmake/packages/opencl/**') }}
 
       - name: Cache TensorFlow
         uses: actions/cache@v4
@@ -106,14 +105,29 @@ jobs:
           restore-keys: |
              ${{ runner.os }}-litert-
 
-      # - name: Cache CCache
-      #   uses: actions/cache@v4
-      #   with:
-      #     path: .ccache
-      #     key: ${{ runner.os }}-ccache-${{ hashFiles('**/CMakeLists.txt') }}
-      #     restore-keys: |
-      #       ${{ runner.os }}-ccache-
-            
+      - name: Cache CCache
+        uses: actions/cache@v4
+        with:
+          path: .ccache
+          key: ${{ runner.os }}-ccache-${{ hashFiles('**/CMakeLists.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-ccache-
+      
+      - name: Cache Generated Headers & Flatbuffers
+        id: cache-generated
+        uses: actions/cache@v4
+        with:
+          path: |
+            cmake/build/generated
+            cmake/build/external/flatbuffers
+          
+          # The Key: 
+          # 1. OS (Linux/Windows)
+          # 2. Schema Definitions (.fbs)
+          # 3. Build Logic (generators.cmake + flatbuffers cmake)
+          # 4. SOURCE FILES (The raw input that gets sanitized)
+          key: generated-src-v1-${{ runner.os }}-${{ hashFiles('schema/**/*.fbs', 'cmake/modules/generators.cmake', 'cmake/packages/flatbuffers/**', 'c/**/*.{cc,h}', 'schema/**/*.{cc,h}', 'runtime/**/*.{cc,h}') }}
+              
       - name: Configure CMake
         run: |
           # The restored caches will populate external/ and _deps/ before this runs.
