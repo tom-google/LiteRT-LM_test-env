@@ -113,21 +113,17 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-ccache-
       
-      - name: Cache Generated Headers & Flatbuffers
+      - name: Cache Generated Sourcetree & Flatbuffers
         id: cache-generated
         uses: actions/cache@v4
         with:
           path: |
             cmake/build/generated
             cmake/build/external/flatbuffers
-          
-          # The Key: 
-          # 1. OS (Linux/Windows)
-          # 2. Schema Definitions (.fbs)
-          # 3. Build Logic (generators.cmake + flatbuffers cmake)
-          # 4. SOURCE FILES (The raw input that gets sanitized)
-          key: generated-src-v1-${{ runner.os }}-${{ hashFiles('schema/**/*.fbs', 'cmake/modules/generators.cmake', 'cmake/packages/flatbuffers/**', 'c/**/*.{cc,h}', 'schema/**/*.{cc,h}', 'runtime/**/*.{cc,h}') }}
-              
+          key: ${{ runner.os }}-generated-src-v1-${{ hashFiles('schema/**/*.fbs', 'cmake/modules/generators.cmake', 'cmake/packages/flatbuffers/**', 'c/**/*.{cc,h}', 'schema/**/*.{cc,h}', 'runtime/**/*.{cc,h}') }}
+          restore-keys: |
+            ${{ runner.os }}-generated-src-v1-
+             
       - name: Configure CMake
         run: |
           # The restored caches will populate external/ and _deps/ before this runs.
