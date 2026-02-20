@@ -1,4 +1,4 @@
-name: "smoke-test-linux"
+name: "CI-Build-CMake"
 on:
   push:
     branches: [ "main" ]
@@ -20,13 +20,12 @@ env:
   MODEL_PATH: ./models/gemma3-270m-it-q8.litertlm
   MODEL_URL: https://huggingface.co/litert-community/gemma-3-270m-it/resolve/main/gemma3-270m-it-q8.litertlm
   CCACHE_DIR: "${{ github.workspace }}/.ccache"
-  CCACHE_SLOPPINESS: "time_macros" 
+  CCACHE_SLOPPINESS: "time_macros"
 
 jobs:
-  smoke-test:
-    name: "Smoke-Test-Linux"
+  presubmit:
+    name: "Presubmit-CMake-Linux"
     runs-on: ubuntu-latest
-    environment: huggingface-access
     container:
       image: ubuntu:24.04
 
@@ -112,7 +111,7 @@ jobs:
           key: ${{ runner.os }}-ccache-${{ hashFiles('**/CMakeLists.txt') }}
           restore-keys: |
             ${{ runner.os }}-ccache-
-      
+
       - name: Cache Generated Sourcetree & Flatbuffers
         id: cache-generated
         uses: actions/cache@v4
@@ -121,7 +120,7 @@ jobs:
             cmake/build/generated
             cmake/build/external/flatbuffers
           key: ${{ runner.os }}-generated-src-v1-${{ hashFiles('schema/**/*.fbs', 'cmake/modules/generators.cmake', 'cmake/packages/flatbuffers/**', 'c/**/*.{cc,h}', 'schema/**/*.{cc,h}', 'runtime/**/*.{cc,h}') }}
-             
+
       - name: Configure CMake
         run: |
           # The restored caches will populate external/ and _deps/ before this runs.
