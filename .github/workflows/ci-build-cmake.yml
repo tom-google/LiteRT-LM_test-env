@@ -134,12 +134,8 @@ jobs:
         run: cmake --build cmake/build --config Release --parallel $(nproc)
 
       - name: Run Inference Test
-        run: |
-          ./cmake/build/litert_lm_main \
-            --backend=cpu \
-            --model_path=${{ env.MODEL_PATH }} \
-            --input_prompt="How tall is the Eiffel Tower?"
-
+        run: .github/workflows/smoke_test.sh
+        
       - name: Save CCache on Failure
         if: failure()
         uses: actions/cache/save@v4
