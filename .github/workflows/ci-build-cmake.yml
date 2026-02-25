@@ -54,7 +54,9 @@ jobs:
         id: cache-model
         uses: actions/cache@v4
         with:
-          path: ./models
+          path: |
+            ./models
+            !models/*.xnnpack_cache
           key: ${{ env.MODEL_KEY }}
 
       - name: Download Model
