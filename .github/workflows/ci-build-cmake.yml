@@ -1,4 +1,4 @@
-name: "CI-Build-CMake"
+name: "CI-CMake"
 on:
   push:
     branches: [ "main" ]
@@ -134,8 +134,7 @@ jobs:
         run: cmake --build cmake/build --config Release --parallel $(nproc)
 
       - name: Run Inference Test
-        shell: bash
-        run: smoke_test.sh ${{ env.MODEL_PATH }}
+        run: bash smoke_test.sh ${{ env.MODEL_PATH }}
         
       - name: Save CCache on Failure
         if: failure()
