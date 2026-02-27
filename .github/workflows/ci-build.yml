@@ -6,8 +6,6 @@ on:
   pull_request:
     branches:
     - main
-  schedule:
-    - cron: "0 10 * * *"  # Run at 2am PST (10am UTC) every day to refresh the cache.
   workflow_dispatch:  # Manual trigger
     inputs:
       REFRESH_CACHE:
@@ -23,10 +21,17 @@ jobs:
   presubmit:
     name: "Presubmit"
     runs-on: LiteRT_Linux_x64
+    defaults:
+      run:
+        shell: bash
     permissions:
       actions: write  # For gh cache delete.
       contents: write  # For gh release upload.
     env:
+      MODEL_KEY: gemma-3-270m-it-v1
+      MODEL_PATH: ./models/gemma3-270m-it-q8.litertlm
+      MODEL_URL: https://huggingface.co/litert-community/gemma-3-270m-it/resolve/main/gemma3-270m-it-q8.litertlm
+
       GH_TOKEN: ${{ github.token }}  # For gh release upload.
       REFRESH_CACHE: ${{ github.event_name == 'schedule' ||
                          (github.event_name == 'workflow_dispatch' && inputs.REFRESH_CACHE) }}
@@ -76,6 +81,28 @@ jobs:
           echo "Cache Primary Key: ${{ steps.bazel-cache.outputs.cache-primary-key }}"
           echo "Cache Matched Key: ${{ steps.bazel-cache.outputs.cache-matched-key }}"
 
+      - name: Cache Model
+        id: cache-model
+        uses: actions/cache@v4
+        with:
+          path: |
+            ./models
+            !./models/*.xnnpack_cache
+          key: ${{ env.MODEL_KEY }}
+
+      - name: Download Model
+        if: steps.cache-model.outputs.cache-hit != 'true'
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          mkdir -p ./models
+          echo "Downloading model from Hugging Face..."
+          curl -L --retry 5 -f \
+            -H "Authorization: Bearer $HF_TOKEN" \
+            -o ${{ env.MODEL_PATH }} \
+            "${{ env.MODEL_URL }}"
+          ls -lh ${{ env.MODEL_PATH }}
+
       - name: Run bazel build on Linux.
         run: |
           bazel build --disk_cache=~/.cache/bazel-linux --config=linux_x86_64 \
@@ -106,6 +133,13 @@ jobs:
             --define=resolve_symbols_in_exec=false \
             //runtime/engine:litert_lm_main
 
+      - name: Run Inference Test
+        run: |
+          ./bazel-bin/runtime/engine/litert_lm_main \
+            --backend=cpu \
+            --model_path=${{ env.MODEL_PATH }} \
+            --input_prompt="How tall is the Eiffel Tower?"
+
       - name: Check if litert_lm_main has only LiteRt symbols undefined.
         # Return exit code 1 if libLiteRt.so has LiteRt symbols except for LiteRtTopK
         # and some exceptions listed explictly here.
@@ -114,10 +148,10 @@ jobs:
           ! readelf -sW bazel-bin/runtime/engine/litert_lm_main \
             | grep " LiteRt" | grep -v " UND LiteRt" | grep -v " LiteRtTopK" \
             | grep -v -e LiteRtIsSameLayout -e LiteRtGetNumLayoutElements \
-                      -e "LiteRt.*MinLoggerSeverity" -e "LiteRt.*OpaqueOptions" \
+                      -e "LiteRt.*Logger" -e "LiteRt.*Metric" -e "LiteRt.*OpaqueOptions" \
                       -e "LiteRt.*EnvironmentOptions" -e LiteRtGetLogSeverityName \
-                      -e LiteRtGetDefaultLogger -e LiteRtCompareApiVersion \
-                      -e LiteRtGetStatusString -e "LiteRt.*Metric"
+                      -e LiteRtCompareApiVersion -e LiteRtGetStatusString
+
       - name: Setup Android NDK.
         uses: nttld/setup-ndk@v1
         id: setup-ndk
