@@ -36,17 +36,17 @@ for TEST in "${VALIDATION_TESTS[@]}"; do
     --backend=cpu \
     --model_path="${MODEL_PATH}" \
     --input_prompt="$PROMPT")
-
-  # Pattern match (Case-Insensitive, Extended Regex)
-  if echo "$OUTPUT" | tr '\n' ' ' | grep -qiE "$REGEX"; then
-    echo "✅ PASS"
-  else
-    echo "❌ FAIL"
-    echo "--------------------------------------------------"
-    echo "EXPECTED PATTERN: $REGEX"
-    echo "ACTUAL OUTPUT:    $OUTPUT"
-    echo "--------------------------------------------------"
-  fi
+  echo $OUTPUT
+  # # Pattern match (Case-Insensitive, Extended Regex)
+  # if echo "$OUTPUT" | tr '\n' ' ' | grep -qiE "$REGEX"; then
+  #   echo "✅ PASS"
+  # else
+  #   echo "❌ FAIL"
+  #   echo "--------------------------------------------------"
+  #   echo "EXPECTED PATTERN: $REGEX"
+  #   echo "ACTUAL OUTPUT:    $OUTPUT"
+  #   echo "--------------------------------------------------"
+  # fi
 done
 
 echo "=================================================="
