@@ -68,6 +68,9 @@ jobs:
           ls -lh ${{ env.MODEL_PATH }}
 
       - name: Run bazel build on Linux.
+        env:
+          CC: gcc
+          CXX: g++
         run: |
           bazel-7.6.1 build --disk_cache=~/.cache/bazel-linux --config=linux_x86_64 \
             --java_runtime_version=remotejdk_11 \
