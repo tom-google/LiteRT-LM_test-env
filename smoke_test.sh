@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Copyright 2026 The ODML Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -30,13 +32,13 @@ for TEST in "${VALIDATION_TESTS[@]}"; do
 
   echo -n "👉 Testing: $PROMPT ... "
 
-  OUTPUT=$(./cmake/build/litert_lm_main \
+  OUTPUT=$(./bazel-bin/runtime/engine/litert_lm_main \
     --backend=cpu \
     --model_path="${MODEL_PATH}" \
-    --input_prompt="$PROMPT" 2>&1)
+    --input_prompt="$PROMPT")
 
   # Pattern match (Case-Insensitive, Extended Regex)
-  if echo "$OUTPUT" | grep -qiE "$REGEX"; then
+  if echo "$OUTPUT" | tr '\n' ' ' | grep -qiE "$REGEX"; then
     echo "✅ PASS"
   else
     echo "❌ FAIL"
