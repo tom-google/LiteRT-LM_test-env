@@ -72,8 +72,11 @@ jobs:
           bazel-7.6.1 build --disk_cache=~/.cache/bazel-linux --config=linux_x86_64 \
             --java_runtime_version=remotejdk_11 \
             --tool_java_runtime_version=remotejdk_11 \
-            //... -//kotlin/... \
-            //runtime/engine:litert_lm_main
+            //... \
+            //runtime/engine:litert_lm_main \
+            -- \
+            -//kotlin/java/com/google/ai/edge/litertlm/... \
+            -//schema/py:*
 
       - name: Run Inference Test
         run: bash smoke_test.sh ${{ env.MODEL_PATH }}
