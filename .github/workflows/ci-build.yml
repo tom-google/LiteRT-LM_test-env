@@ -37,6 +37,7 @@ jobs:
             apt-transport-https gnupg gcc clang openjdk-11-jre-headless \
             google-android-ndk-r26-installer \
             apt-file && apt-file update
+
       - name: Install Bazel
         run: |
           curl -fsSL https://bazel.build/bazel-release.pub.gpg | gpg --dearmor > bazel-archive-keyring.gpg
@@ -48,6 +49,7 @@ jobs:
         run: |
           curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
           echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
       - name: Checkout code.
         uses: actions/checkout@v4
         with:
@@ -68,6 +70,8 @@ jobs:
       - name: Run bazel build on Linux.
         run: |
           bazel-7.6.1 build --disk_cache=~/.cache/bazel-linux --config=linux_x86_64 \
+            --java_runtime_version=remotejdk_11 \
+            --tool_java_runtime_version=remotejdk_11 \
             //... \
             //runtime/engine:litert_lm_main
 
@@ -79,9 +83,11 @@ jobs:
       - name: Run bazel build on Linux with dynamic linking.
         run: |
           bazel-7.6.1 build --config=linux_x86_64 \
+            --java_runtime_version=remotejdk_11 \
+            --tool_java_runtime_version=remotejdk_11 \
             --define=litert_link_capi_so=true \
             --define=resolve_symbols_in_exec=false \
             //runtime/engine:litert_lm_main
 
       - name: Run Inference Test
-        run: bash smoke_test.sh ${{ env.MODEL_PATH }} 
+        run: bash smoke_test.sh ${{ env.MODEL_PATH }}
