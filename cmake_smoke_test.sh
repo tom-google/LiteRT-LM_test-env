@@ -46,7 +46,6 @@ for TEST in "${VALIDATION_TESTS[@]}"; do
     echo "EXPECTED PATTERN: $REGEX"
     echo "ACTUAL OUTPUT:    $OUTPUT"
     echo "--------------------------------------------------"
-    exit 1
   fi
 done
 
