@@ -52,7 +52,7 @@ jobs:
           curl -fsSL https://bazel.build/bazel-release.pub.gpg | gpg --dearmor > bazel-archive-keyring.gpg
           mv bazel-archive-keyring.gpg /usr/share/keyrings
           echo "deb [arch=linux_x86_64 signed-by=/usr/share/keyrings/bazel-archive-keyring.gpg] https://storage.googleapis.com/bazel-apt stable jdk1.8" | tee /etc/apt/sources.list.d/bazel.list
-          apt update && apt install bazel-7.6.1 && echo "alias bazel=bazel-7.6.1" >> ~/.bashrc
+          apt update && apt install bazel-7.6.1
 
       - name: Install Rust
         run: |
@@ -80,7 +80,7 @@ jobs:
 
       - name: Clean build outputs if cache is being refreshed.
         if: env.REFRESH_CACHE == 'true'
-        run: bazel clean --expunge
+        run: bazel-7.6.1 clean --expunge
 
       - name: Restore bazel cache if cache is not being refreshed.
         id: bazel-cache
@@ -127,7 +127,7 @@ jobs:
 
       - name: Run bazel build on Linux.
         run: |
-          bazel build --disk_cache=~/.cache/bazel-linux --config=linux_x86_64 \
+          bazel-7.6.1 build --disk_cache=~/.cache/bazel-linux --config=linux_x86_64 \
             //... \
             //runtime/engine:litert_lm_main
 
@@ -144,23 +144,19 @@ jobs:
 
       - name: Run bazel test on Linux.
         run: |
-          bazel test --disk_cache=~/.cache/bazel-linux --config=linux_x86_64 \
+          bazel-7.6.1 test --disk_cache=~/.cache/bazel-linux --config=linux_x86_64 \
             --test_output=errors \
             //...
 
       - name: Run bazel build on Linux with dynamic linking.
         run: |
-          bazel build --config=linux_x86_64 \
+          bazel-7.6.1 build --config=linux_x86_64 \
             --define=litert_link_capi_so=true \
             --define=resolve_symbols_in_exec=false \
             //runtime/engine:litert_lm_main
 
       - name: Run Inference Test
-        run: |
-          ./bazel-bin/runtime/engine/litert_lm_main \
-            --backend=cpu \
-            --model_path=${{ env.MODEL_PATH }} \
-            --input_prompt="How tall is the Eiffel Tower?"
+        run: bash smoke_test.sh ${{ env.MODEL_PATH }} 
 
       - name: Check if litert_lm_main has only LiteRt symbols undefined.
         # Return exit code 1 if libLiteRt.so has LiteRt symbols except for LiteRtTopK
@@ -183,7 +179,7 @@ jobs:
 
       - name: Run bazel build for Android.
         run: |
-          bazel build --disk_cache=~/.cache/bazel-android --config=android_arm64 \
+          bazel-7.6.1 build --disk_cache=~/.cache/bazel-android --config=android_arm64 \
             //... \
             //runtime/engine:litert_lm_main \
             @litert//litert/vendors/mediatek/dispatch:dispatch_api_so \
