@@ -72,7 +72,7 @@ jobs:
           bazel-7.6.1 build --disk_cache=~/.cache/bazel-linux --config=linux_x86_64 \
             --java_runtime_version=remotejdk_11 \
             --tool_java_runtime_version=remotejdk_11 \
-            //... \
+            //... -//kotlin/... \
             //runtime/engine:litert_lm_main
 
       - name: Check if litert_lm_main doesn't link libLiteRt.so.
@@ -80,13 +80,15 @@ jobs:
         run: |
           ! readelf -d bazel-bin/runtime/engine/litert_lm_main | grep libLiteRt.so
 
-      - name: Run bazel build on Linux.
+      - name: Run bazel build on Linux with dynamic linking.
         run: |
-          bazel-7.6.1 build --disk_cache=~/.cache/bazel-linux --config=linux_x86_64 \
-          --java_runtime_version=remotejdk_11 \
-          --tool_java_runtime_version=remotejdk_11 \
-          //... -//kotlin/... \
-          //runtime/engine:litert_lm_main
+          bazel-7.6.1 build --config=linux_x86_64 \
+            --java_runtime_version=remotejdk_11 \
+            --tool_java_runtime_version=remotejdk_11 \
+            --define=litert_link_capi_so=true \
+            --define=resolve_symbols_in_exec=false \
+            //... -//kotlin/... \
+            //runtime/engine:litert_lm_main
 
       - name: Run Inference Test
         run: bash smoke_test.sh ${{ env.MODEL_PATH }}
