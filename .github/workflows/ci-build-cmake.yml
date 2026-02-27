@@ -136,7 +136,7 @@ jobs:
         run: cmake --build cmake/build --config Release --parallel $(nproc)
 
       - name: Run Inference Test
-        run: bash smoke_test.sh ${{ env.MODEL_PATH }}
+        run: bash cmake_smoke_test.sh ${{ env.MODEL_PATH }}
         
       - name: Save CCache on Failure
         if: failure()
